@@ -1,13 +1,15 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Controller;
 use App\Models\User;
 use Inertia\Inertia;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rules;
 use Spatie\Permission\Models\Role;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 
 class UserController extends Controller
 {
@@ -40,7 +42,7 @@ class UserController extends Controller
             'direction' => $direction,
         ];
 
-        return Inertia::render('Users/Index', [
+        return Inertia::render('Admin/Users/Index', [
             'users' => $users,
             'roles' => $roles,
             'filters' => $filters
@@ -96,11 +98,38 @@ class UserController extends Controller
     public function destroy(User $user)
     {
         if ($user->id === auth()->id()) {
-            return redirect()->back()->with('error', 'You cannot delete your own account.');
+            throw ValidationException::withMessages([
+                'error' => 'You cannot delete your own account.',
+            ]);
         }
-
+        // Prevent deletion if user owns a warehouse with products
+        $ownsWarehouseWithProducts = $user->ownedWarehouses()->whereHas('inventoryItems', function($q) {
+            $q->where('quantity', '>', 0);
+        })->exists();
+        if ($ownsWarehouseWithProducts) {
+            throw ValidationException::withMessages([
+                'error' => 'Cannot delete user: this user owns a warehouse that still has products.',
+            ]);
+        }
+        // Prevent deletion if any owned warehouse has pending/in-transit purchase orders
+        $ownsWarehouseWithPendingPOs = $user->ownedWarehouses()->whereHas('purchaseOrders', function($q) {
+            $q->whereIn('status', ['pending', 'ordered', 'in_transit', 'partially_received']);
+        })->exists();
+        if ($ownsWarehouseWithPendingPOs) {
+            throw ValidationException::withMessages([
+                'error' => 'Cannot delete user: this user owns a warehouse with pending or in-transit purchase orders.',
+            ]);
+        }
+        // Prevent deletion if any owned warehouse has pending/in-transit sales orders
+        $ownsWarehouseWithPendingSOs = $user->ownedWarehouses()->whereHas('salesOrders', function($q) {
+            $q->whereIn('status', ['pending', 'processing', 'shipped']);
+        })->exists();
+        if ($ownsWarehouseWithPendingSOs) {
+            throw ValidationException::withMessages([
+                'error' => 'Cannot delete user: this user owns a warehouse with pending or in-transit sales orders.',
+            ]);
+        }
         $user->delete();
-
         return redirect()->back()->with('success', 'User deleted successfully.');
     }
 }

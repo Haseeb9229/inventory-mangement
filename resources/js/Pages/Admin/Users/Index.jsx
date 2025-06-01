@@ -4,13 +4,48 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { router } from '@inertiajs/react';
 import debounce from 'lodash/debounce';
 import Modal from '@/Components/Modal';
+import toast, { Toaster } from 'react-hot-toast';
+
+// Custom toast styles
+const toastStyles = {
+    style: {
+        background: '#fff',
+        color: '#54483A',
+        border: '1px solid #E8E6E1',
+        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+        borderRadius: '0.5rem',
+        padding: '0.75rem 1rem',
+    },
+    success: {
+        iconTheme: {
+            primary: '#4A6741',
+            secondary: '#fff',
+        },
+        style: {
+            borderLeft: '4px solid #4A6741',
+        },
+    },
+    error: {
+        iconTheme: {
+            primary: '#B85C38',
+            secondary: '#fff',
+        },
+        style: {
+            borderLeft: '4px solid #B85C38',
+        },
+    },
+};
 
 export default function Index({ users = { data: [], links: [], from: 0, to: 0, total: 0 }, roles = [], filters = { search: '', sort: 'created_at', direction: 'desc' } }) {
     const [showAddModal, setShowAddModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [selectedUser, setSelectedUser] = useState(null);
     const [sortColumn, setSortColumn] = useState(filters.sort || 'created_at');
     const [sortDirection, setSortDirection] = useState(filters.direction || 'desc');
+    const [isDeleting, setIsDeleting] = useState(false);
 
-    const { data, setData, post, processing, errors, reset, clearErrors, setError } = useForm({
+    const { data, setData, post, put, processing, errors, reset, clearErrors, setError } = useForm({
         name: '',
         email: '',
         password: '',
@@ -25,7 +60,23 @@ export default function Index({ users = { data: [], links: [], from: 0, to: 0, t
 
     const closeModal = () => {
         setShowAddModal(false);
+        setShowEditModal(false);
+        setShowDeleteModal(false);
+        setSelectedUser(null);
         reset();
+        clearErrors();
+    };
+
+    const openAddModal = () => {
+        // Reset form data before opening add modal
+        reset({
+            name: '',
+            email: '',
+            password: '',
+            role: '',
+            search: data.search,
+        });
+        setShowAddModal(true);
     };
 
     const handleSubmit = (e) => {
@@ -33,6 +84,69 @@ export default function Index({ users = { data: [], links: [], from: 0, to: 0, t
         post(route('admin.users.store'), {
             onSuccess: () => {
                 closeModal();
+                toast.success('User created successfully!', toastStyles);
+            },
+            onError: (errors) => {
+                if (Object.keys(errors).length > 0) {
+                    toast.error('Please check the form for errors', toastStyles);
+                }
+            },
+        });
+    };
+
+    const handleEdit = (user) => {
+        setSelectedUser(user);
+        setData({
+            name: user.name,
+            email: user.email,
+            role: user.roles[0]?.name || '',
+            password: '', // Clear password field
+            search: data.search, // Preserve search value
+        });
+        setShowEditModal(true);
+    };
+
+    const handleUpdate = (e) => {
+        e.preventDefault();
+        put(route('admin.users.update', selectedUser.id), {
+            onSuccess: () => {
+                closeModal();
+                toast.success('User updated successfully!', toastStyles);
+            },
+            onError: (errors) => {
+                if (Object.keys(errors).length > 0) {
+                    toast.error('Please check the form for errors', toastStyles);
+                }
+            },
+        });
+    };
+
+    const handleDelete = (user) => {
+        setSelectedUser(user);
+        setShowDeleteModal(true);
+    };
+
+    const confirmDelete = () => {
+        setIsDeleting(true);
+        router.delete(route('admin.users.destroy', selectedUser.id), {
+            onSuccess: () => {
+                closeModal();
+                toast.success('User deleted successfully!', toastStyles);
+            },
+            onError: (errors) => {
+                // If the error is a string (from backend 409), show it as a toast
+                if (typeof errors === 'string') {
+                    toast.error(errors, toastStyles);
+                } else if (errors && typeof errors.error === 'string') {
+                    toast.error(errors.error, toastStyles);
+                } else {
+                    Object.values(errors).forEach(error => {
+                        toast.error(error, toastStyles);
+                    });
+                }
+            },
+            onFinish: () => {
+                setIsDeleting(false);
             },
         });
     };
@@ -93,30 +207,32 @@ export default function Index({ users = { data: [], links: [], from: 0, to: 0, t
     return (
         <AuthenticatedLayout>
             <Head title="Users Management" />
+            <Toaster
+                position="top-right"
+                toastOptions={{
+                    duration: 3000,
+                    className: 'font-medium',
+                }}
+            />
 
             <div className="py-12">
-                <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                    <div className="bg-white/80 backdrop-blur-sm overflow-hidden shadow-xl rounded-lg">
-                        <div className="p-6">
-                            <div className="flex justify-between items-center mb-6">
-                                <h2 className="text-2xl font-bold text-[#54483A]">Users Management</h2>
-                                <div className="flex items-center gap-4">
-                                    <div className="relative">
+                <div className="max-w-7xl mx-auto sm:px-2 lg:px-8">
+                    <div className="bg-white/80 backdrop-blur-sm overflow-x-auto shadow-xl rounded-lg">
+                        <div className="p-6 min-w-[600px]">
+                            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-6">
+                                <h1 className="text-2xl font-bold text-[#54483A]">Users Management</h1>
+                                <div className="flex flex-col md:flex-row md:items-center gap-2 w-full md:w-auto md:justify-end">
+                                    <div className="relative w-full md:w-auto">
                                         <input
                                             type="text"
                                             placeholder="Search users..."
                                             value={data.search}
                                             onChange={handleSearch}
-                                            className="rounded-lg border-[#E8E6E1] focus:border-[#D5BEA4] focus:ring focus:ring-[#D5BEA4] focus:ring-opacity-50 bg-white/50 backdrop-blur-sm"
+                                            className="w-full md:w-auto rounded-lg border-[#E8E6E1] focus:border-[#D5BEA4] focus:ring focus:ring-[#D5BEA4] focus:ring-opacity-50 bg-white/50 backdrop-blur-sm"
                                         />
-                                        <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
-                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                            </svg>
-                                        </span>
                                     </div>
                                     <button
-                                        onClick={() => setShowAddModal(true)}
+                                        onClick={openAddModal}
                                         className="bg-gradient-to-r from-[#B85C38] to-[#E2725B] hover:from-[#A04B2D] hover:to-[#D1614A] text-white px-4 py-2 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg flex items-center gap-2"
                                     >
                                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -126,9 +242,8 @@ export default function Index({ users = { data: [], links: [], from: 0, to: 0, t
                                     </button>
                                 </div>
                             </div>
-
                             <div className="overflow-x-auto">
-                                <table className="min-w-full divide-y divide-[#E8E6E1]">
+                                <table className="min-w-full divide-y divide-[#E8E6E1] mx-auto">
                                     <thead>
                                         <tr className="bg-[#F5F5F5]">
                                             <th
@@ -188,12 +303,18 @@ export default function Index({ users = { data: [], links: [], from: 0, to: 0, t
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm">
                                                     <div className="flex items-center gap-3">
-                                                        <button className="text-[#8B7355] hover:text-[#54483A] transition-colors duration-200">
+                                                        <button
+                                                            onClick={() => handleEdit(user)}
+                                                            className="text-[#8B7355] hover:text-[#54483A] transition-colors duration-200"
+                                                        >
                                                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                                                             </svg>
                                                         </button>
-                                                        <button className="text-red-500 hover:text-red-700 transition-colors duration-200">
+                                                        <button
+                                                            onClick={() => handleDelete(user)}
+                                                            className="text-red-500 hover:text-red-700 transition-colors duration-200"
+                                                        >
                                                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                                             </svg>
@@ -222,6 +343,7 @@ export default function Index({ users = { data: [], links: [], from: 0, to: 0, t
                                                 value={data.name}
                                                 onChange={e => handleInputChange('name', e.target.value)}
                                                 className="w-full rounded-lg border-[#E8E6E1] focus:border-[#D5BEA4] focus:ring focus:ring-[#D5BEA4] focus:ring-opacity-50"
+                                                autoComplete="off"
                                             />
                                             {errors.name && (
                                                 <p className="mt-1 text-sm text-red-600">{errors.name}</p>
@@ -238,6 +360,7 @@ export default function Index({ users = { data: [], links: [], from: 0, to: 0, t
                                                 value={data.email}
                                                 onChange={e => handleInputChange('email', e.target.value)}
                                                 className="w-full rounded-lg border-[#E8E6E1] focus:border-[#D5BEA4] focus:ring focus:ring-[#D5BEA4] focus:ring-opacity-50"
+                                                autoComplete="off"
                                             />
                                             {errors.email && (
                                                 <p className="mt-1 text-sm text-red-600">{errors.email}</p>
@@ -254,6 +377,7 @@ export default function Index({ users = { data: [], links: [], from: 0, to: 0, t
                                                 value={data.password}
                                                 onChange={e => handleInputChange('password', e.target.value)}
                                                 className="w-full rounded-lg border-[#E8E6E1] focus:border-[#D5BEA4] focus:ring focus:ring-[#D5BEA4] focus:ring-opacity-50"
+                                                autoComplete="new-password"
                                             />
                                             {errors.password && (
                                                 <p className="mt-1 text-sm text-red-600">{errors.password}</p>
@@ -269,6 +393,7 @@ export default function Index({ users = { data: [], links: [], from: 0, to: 0, t
                                                 value={data.role}
                                                 onChange={e => handleInputChange('role', e.target.value)}
                                                 className="w-full rounded-lg border-[#E8E6E1] focus:border-[#D5BEA4] focus:ring focus:ring-[#D5BEA4] focus:ring-opacity-50"
+                                                autoComplete="off"
                                             >
                                                 <option value="">Select a role</option>
                                                 {roles.map(role => (
@@ -300,6 +425,134 @@ export default function Index({ users = { data: [], links: [], from: 0, to: 0, t
                                         </button>
                                     </div>
                                 </form>
+                            </Modal>
+
+                            {/* Edit User Modal */}
+                            <Modal show={showEditModal} onClose={closeModal} maxWidth="md">
+                                <form onSubmit={handleUpdate} className="p-6">
+                                    <h2 className="text-lg font-medium text-[#54483A] mb-6">Edit User</h2>
+
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label htmlFor="name" className="block text-sm font-medium text-[#8B7355] mb-1">
+                                                Name
+                                            </label>
+                                            <input
+                                                id="name"
+                                                type="text"
+                                                value={data.name}
+                                                onChange={e => handleInputChange('name', e.target.value)}
+                                                className="w-full rounded-lg border-[#E8E6E1] focus:border-[#D5BEA4] focus:ring focus:ring-[#D5BEA4] focus:ring-opacity-50"
+                                                autoComplete="off"
+                                            />
+                                            {errors.name && (
+                                                <p className="mt-1 text-sm text-red-600">{errors.name}</p>
+                                            )}
+                                        </div>
+
+                                        <div>
+                                            <label htmlFor="email" className="block text-sm font-medium text-[#8B7355] mb-1">
+                                                Email
+                                            </label>
+                                            <input
+                                                id="email"
+                                                type="email"
+                                                value={data.email}
+                                                onChange={e => handleInputChange('email', e.target.value)}
+                                                className="w-full rounded-lg border-[#E8E6E1] focus:border-[#D5BEA4] focus:ring focus:ring-[#D5BEA4] focus:ring-opacity-50"
+                                                autoComplete="off"
+                                            />
+                                            {errors.email && (
+                                                <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+                                            )}
+                                        </div>
+
+                                        <div>
+                                            <label htmlFor="password" className="block text-sm font-medium text-[#8B7355] mb-1">
+                                                Password
+                                            </label>
+                                            <input
+                                                id="password"
+                                                type="password"
+                                                value={data.password}
+                                                onChange={e => handleInputChange('password', e.target.value)}
+                                                className="w-full rounded-lg border-[#E8E6E1] focus:border-[#D5BEA4] focus:ring focus:ring-[#D5BEA4] focus:ring-opacity-50"
+                                                autoComplete="new-password"
+                                            />
+                                            {errors.password && (
+                                                <p className="mt-1 text-sm text-red-600">{errors.password}</p>
+                                            )}
+                                        </div>
+
+                                        <div>
+                                            <label htmlFor="role" className="block text-sm font-medium text-[#8B7355] mb-1">
+                                                Role
+                                            </label>
+                                            <select
+                                                id="role"
+                                                value={data.role}
+                                                onChange={e => handleInputChange('role', e.target.value)}
+                                                className="w-full rounded-lg border-[#E8E6E1] focus:border-[#D5BEA4] focus:ring focus:ring-[#D5BEA4] focus:ring-opacity-50"
+                                                autoComplete="off"
+                                            >
+                                                <option value="">Select a role</option>
+                                                {roles.map(role => (
+                                                    <option key={role.id} value={role.name}>
+                                                        {formatRoleName(role.name)}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            {errors.role && (
+                                                <p className="mt-1 text-sm text-red-600">{errors.role}</p>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-6 flex justify-end gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={closeModal}
+                                            className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-[#967E76] to-[#D7C0AE] hover:from-[#857065] hover:to-[#C6AF9B] transition-all duration-300 shadow-md hover:shadow-lg"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            disabled={processing}
+                                            className={`px-4 py-2 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-[#B85C38] to-[#E2725B] hover:from-[#A04B2D] hover:to-[#D1614A] transition-all duration-300 shadow-md hover:shadow-lg ${processing ? 'opacity-75 cursor-not-allowed' : ''}`}
+                                        >
+                                            {processing ? 'Updating...' : 'Update User'}
+                                        </button>
+                                    </div>
+                                </form>
+                            </Modal>
+
+                            {/* Delete User Modal */}
+                            <Modal show={showDeleteModal} onClose={closeModal} maxWidth="md">
+                                <div className="p-6">
+                                    <h2 className="text-lg font-medium text-[#54483A] mb-6">Delete User</h2>
+                                    <p className="text-sm text-[#8B7355] mb-6">
+                                        Are you sure you want to delete this user? This action cannot be undone.
+                                    </p>
+                                    <div className="flex justify-end gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={closeModal}
+                                            disabled={isDeleting}
+                                            className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-[#967E76] to-[#D7C0AE] hover:from-[#857065] hover:to-[#C6AF9B] transition-all duration-300 shadow-md hover:shadow-lg disabled:opacity-75 disabled:cursor-not-allowed"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={confirmDelete}
+                                            disabled={isDeleting}
+                                            className={`px-4 py-2 rounded-lg text-sm font-medium text-white bg-red-500 hover:bg-red-600 transition-all duration-300 shadow-md hover:shadow-lg disabled:opacity-75 disabled:cursor-not-allowed ${isDeleting ? 'opacity-75 cursor-not-allowed' : ''}`}
+                                        >
+                                            {isDeleting ? 'Deleting...' : 'Delete User'}
+                                        </button>
+                                    </div>
+                                </div>
                             </Modal>
 
                             {/* Pagination */}

@@ -13,16 +13,17 @@ return new class extends Migration
     {
         Schema::create('inventory_items', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->string('sku')->unique();
             $table->foreignId('warehouse_id')->constrained()->onDelete('cascade');
-            $table->foreignId('category_id')->constrained()->onDelete('cascade');
-            $table->foreignId('supplier_id')->constrained()->onDelete('cascade');
-            $table->integer('quantity');
-            $table->integer('reorder_level')->default(0);
-            $table->decimal('price', 10, 2);
-            $table->text('description')->nullable();
+            $table->foreignId('product_id')->constrained()->onDelete('cascade');
+            $table->decimal('quantity', 10, 2);
+            $table->decimal('unit_price', 10, 2);
+            $table->enum('status', ['in_stock', 'low_stock', 'out_of_stock'])->default('in_stock');
+            $table->timestamp('last_restocked_at')->nullable();
+            $table->text('notes')->nullable();
             $table->timestamps();
+
+            // Add unique constraint to prevent duplicate product entries in same warehouse
+            $table->unique(['warehouse_id', 'product_id']);
         });
     }
 

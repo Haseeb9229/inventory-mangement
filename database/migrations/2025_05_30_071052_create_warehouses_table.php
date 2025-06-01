@@ -14,9 +14,11 @@ return new class extends Migration
         Schema::create('warehouses', function (Blueprint $table) {
             $table->id();
             $table->string('name');
+            $table->string('code', 50)->unique();
             $table->string('location');
+            $table->decimal('capacity', 10, 2);
             $table->text('description')->nullable();
-            $table->integer('capacity')->default(1000);
+            $table->foreignId('owner_id')->constrained('users')->onDelete('cascade')->unique();
             $table->timestamps();
         });
     }
