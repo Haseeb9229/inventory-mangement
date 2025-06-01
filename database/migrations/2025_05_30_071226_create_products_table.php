@@ -17,8 +17,6 @@ return new class extends Migration
             $table->integer('reorder_point')->default(10);
             $table->integer('sold_count')->default(0);
             $table->foreignId('category_id')->constrained()->onDelete('cascade');
-            $table->foreignId('supplier_id')->constrained()->onDelete('cascade');
-            $table->foreignId('warehouse_id')->constrained()->onDelete('cascade');
             $table->string('sku')->unique();
             $table->string('barcode')->nullable();
             $table->string('status')->default('active');

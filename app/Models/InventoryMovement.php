@@ -15,6 +15,7 @@ class InventoryMovement extends Model
         'quantity',
         'type',
         'reference',
+        'reference_id',
         'notes',
         'created_by',
         'source_warehouse_id',

@@ -2,7 +2,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import InventoryNavigation from '@/Components/InventoryNavigation';
 import { Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
-import { Boxes, AlertTriangle, AlertCircle, CheckCircle } from 'lucide-react';
+import { Boxes, AlertTriangle, AlertCircle, CheckCircle, Wrench } from 'lucide-react';
 import Modal from '@/Components/Modal';
 import { useForm } from '@inertiajs/react';
 import toast, { Toaster } from 'react-hot-toast';
@@ -252,9 +252,10 @@ export default function Index({ inventory, warehouses, filters }) {
                                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
                                                     <button
                                                         onClick={() => openAdjustmentModal(item)}
-                                                        className="text-[#B85C38] hover:text-[#A04B2D] font-medium"
+                                                        className="text-[#B85C38] hover:text-[#A04B2D] p-2 rounded-full hover:bg-[#F0EBE3] transition-colors duration-200"
+                                                        title="Adjust Inventory"
                                                     >
-                                                        Adjust
+                                                        <Wrench className="w-5 h-5" />
                                                     </button>
                                                 </td>
                                             </tr>

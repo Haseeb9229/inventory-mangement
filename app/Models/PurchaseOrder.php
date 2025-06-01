@@ -107,6 +107,10 @@ class PurchaseOrder extends Model
                 // Add remaining quantity to inventory
                 $inventoryItem->addQuantity($remainingQuantity);
 
+                // Update product total quantity across all warehouses
+                $totalQuantity = InventoryItem::where('product_id', $item->product_id)->sum('quantity');
+                Product::where('id', $item->product_id)->update(['quantity' => $totalQuantity]);
+
                 // Log inventory movement (type: 'in')
                 InventoryMovement::create([
                     'product_id' => $item->product_id,
@@ -154,6 +158,10 @@ class PurchaseOrder extends Model
 
         $inventoryItem->addQuantity($quantity);
 
+        // Update product total quantity across all warehouses
+        $totalQuantity = InventoryItem::where('product_id', $item->product_id)->sum('quantity');
+        Product::where('id', $item->product_id)->update(['quantity' => $totalQuantity]);
+
         // Log inventory movement (type: 'in')
         InventoryMovement::create([
             'product_id' => $item->product_id,
@@ -179,5 +187,10 @@ class PurchaseOrder extends Model
             $this->status = 'partially_received';
         }
         $this->save();
+    }
+
+    public function purchaseReturns()
+    {
+        return $this->hasMany(PurchaseReturn::class);
     }
 }

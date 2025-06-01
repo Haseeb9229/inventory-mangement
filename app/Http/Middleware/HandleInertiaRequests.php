@@ -36,6 +36,19 @@ class HandleInertiaRequests extends Middleware
                     $request->user()->toArray(),
                     [
                         'roles' => $request->user()->getRoleNames(),
+                        'notifications' => $request->user()->notifications()
+                            ->orderBy('created_at', 'desc')
+                            ->take(50)
+                            ->get()
+                            ->map(function($n) {
+                                return [
+                                    'id' => $n->id,
+                                    'title' => $n->data['title'] ?? '',
+                                    'message' => $n->data['message'] ?? '',
+                                    'read_at' => $n->read_at,
+                                    'at' => $n->created_at->toIso8601String(),
+                                ];
+                            }),
                     ]
                 ) : null,
             ],

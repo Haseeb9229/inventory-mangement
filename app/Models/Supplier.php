@@ -9,23 +9,11 @@ class Supplier extends Model
 {
     protected $fillable = [
         'name',
-        'contact_person',
+        'contact_name',
         'email',
         'phone',
         'address',
-        'city',
-        'state',
-        'country',
-        'zip_code',
-        'tax_number',
-        'status',
-        'notes'
     ];
-
-    public function products(): HasMany
-    {
-        return $this->hasMany(Product::class);
-    }
 
     public function purchaseOrders(): HasMany
     {

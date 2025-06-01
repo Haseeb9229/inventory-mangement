@@ -11,31 +11,24 @@ class Product extends Model
 {
     protected $fillable = [
         'name',
-        'sku',
         'description',
         'price',
+        'quantity',
+        'reorder_point',
+        'sold_count',
         'category_id',
-        'supplier_id',
+        'sku',
+        'barcode',
         'status',
-        'min_stock_level',
-        'max_stock_level',
-        'notes'
     ];
 
     protected $casts = [
         'price' => 'decimal:2',
-        'min_stock_level' => 'integer',
-        'max_stock_level' => 'integer'
     ];
 
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
-    }
-
-    public function supplier(): BelongsTo
-    {
-        return $this->belongsTo(Supplier::class);
     }
 
     public function inventoryItems(): HasMany
@@ -53,10 +46,8 @@ class Product extends Model
         return $this->hasMany(SalesOrderItem::class);
     }
 
-    public function warehouses(): BelongsToMany
+    public function purchaseReturns()
     {
-        return $this->belongsToMany(Warehouse::class, 'inventory_items')
-            ->withPivot('quantity', 'unit_price', 'status', 'last_restocked_at', 'notes')
-            ->withTimestamps();
+        return $this->hasMany(PurchaseReturn::class);
     }
 }

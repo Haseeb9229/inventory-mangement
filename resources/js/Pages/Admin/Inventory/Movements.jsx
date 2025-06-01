@@ -88,6 +88,17 @@ export default function Movements({ movements = { data: [], links: [], from: 0, 
         sale_return: 'from-pink-100 to-pink-300 text-pink-900',
     };
 
+    function referenceLabel(type) {
+        switch (type) {
+            case 'purchase_order': return 'PO';
+            case 'purchase_return': return 'Purchase Return';
+            case 'sales_order': return 'SO';
+            case 'manual_adjustment': return 'Manual Adj.';
+            case 'warehouse_move': return 'Warehouse Move';
+            default: return type ? type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : '';
+        }
+    }
+
     return (
         <AuthenticatedLayout>
             <Head title="Inventory Movements" />
@@ -206,7 +217,11 @@ export default function Movements({ movements = { data: [], links: [], from: 0, 
                                                     <div className="text-sm text-[#8B7355]">{movement.quantity}</div>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm text-[#8B7355]">{movement.reference || 'N/A'}</div>
+                                                    <div className="text-sm text-[#8B7355]">
+                                                        {movement.reference_type && movement.reference_id
+                                                            ? `${referenceLabel(movement.reference_type)} #${movement.reference_id}`
+                                                            : 'N/A'}
+                                                    </div>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div className="text-sm text-[#8B7355]">{movement.creator?.name || 'System'}</div>

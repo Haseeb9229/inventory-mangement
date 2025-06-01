@@ -68,6 +68,14 @@ class Warehouse extends Model
     }
 
     /**
+     * Get the purchase returns for this warehouse.
+     */
+    public function purchaseReturns()
+    {
+        return $this->hasMany(PurchaseReturn::class);
+    }
+
+    /**
      * Get the total number of unique products in this warehouse from received purchase orders.
      */
     public function getTotalProductsCount(): int

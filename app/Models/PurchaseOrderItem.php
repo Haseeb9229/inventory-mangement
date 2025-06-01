@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PurchaseOrderItem extends Model
 {
@@ -53,5 +54,10 @@ class PurchaseOrderItem extends Model
     public function isPartiallyReceived(): bool
     {
         return $this->received_quantity > 0 && $this->quantity > $this->received_quantity;
+    }
+
+    public function purchaseReturns(): HasMany
+    {
+        return $this->hasMany(PurchaseReturn::class);
     }
 }

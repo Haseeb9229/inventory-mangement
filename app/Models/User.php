@@ -87,4 +87,9 @@ class User extends Authenticatable
     {
         return $this->hasRole('order_placer');
     }
+
+    public function purchaseReturns()
+    {
+        return $this->hasMany(PurchaseReturn::class, 'returned_by');
+    }
 }

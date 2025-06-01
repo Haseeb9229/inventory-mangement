@@ -13,8 +13,6 @@ class ProductSeeder extends Seeder
     public function run(): void
     {
         $categoryIds = Category::pluck('id');
-        $supplierIds = Supplier::pluck('id');
-        $warehouseIds = Warehouse::pluck('id');
 
         for ($i = 1; $i <= 150; $i++) {
             Product::create([
@@ -25,8 +23,6 @@ class ProductSeeder extends Seeder
                 'reorder_point' => 10,
                 'sold_count' => rand(0, 50),
                 'category_id' => $categoryIds->random(),
-                'supplier_id' => $supplierIds->random(),
-                'warehouse_id' => $warehouseIds->random(),
                 'sku' => "SKU-$i",
                 'status' => 'active'
             ]);

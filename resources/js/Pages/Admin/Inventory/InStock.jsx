@@ -6,6 +6,7 @@ import InventoryNavigation from '@/Components/InventoryNavigation';
 import Modal from '@/Components/Modal';
 import { useForm } from '@inertiajs/react';
 import toast, { Toaster } from 'react-hot-toast';
+import { Wrench } from 'lucide-react';
 
 // Custom toast styles
 const toastStyles = {
@@ -217,9 +218,10 @@ export default function InStock({ inventory = { data: [], links: [], from: 0, to
                                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
                                                     <button
                                                         onClick={() => openAdjustmentModal(item)}
-                                                        className="text-[#B85C38] hover:text-[#A04B2D] font-medium"
+                                                        className="text-[#B85C38] hover:text-[#A04B2D] p-2 rounded-full hover:bg-[#F0EBE3] transition-colors duration-200"
+                                                        title="Adjust Inventory"
                                                     >
-                                                        Adjust
+                                                        <Wrench className="w-5 h-5" />
                                                     </button>
                                                 </td>
                                             </tr>

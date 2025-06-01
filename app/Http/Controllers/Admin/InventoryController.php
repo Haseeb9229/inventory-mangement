@@ -172,6 +172,11 @@ class InventoryController extends Controller
             $inventoryItem->updateStatus();
             $inventoryItem->save();
 
+            // Update product total quantity across all warehouses
+            $totalQuantity = InventoryItem::where('product_id', $product->id)->sum('quantity');
+            $product->quantity = $totalQuantity;
+            $product->save();
+
             // Create inventory movement record
             InventoryMovement::create([
                 'product_id' => $product->id,
